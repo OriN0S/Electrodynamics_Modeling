@@ -9,7 +9,7 @@ def function(x, D = 2): #Функция, вычисляющее значение
     y = 418.9829 * D + y2
     return y
 
-def graph_2d(xmin, xmax, x10, x20, count = 200): #Функция для рассчёта выражения от одной переменной
+def graph_2d(xmin, xmax, x10 = None, x20 = None, count = 200): #Функция для рассчёта выражения от одной переменной
     xgrid = [0, 0]
 
     if (x10 == None): #Проверка на функцию от x1 при x2 = x20
@@ -43,36 +43,43 @@ def graph_3d(x1min, x1max, x2min, x2max, count = 200): #Функция для р
 
     y = function(xgrid)
     return xgrid[0], xgrid[1], y
+
+def draw(x1min, x1max, x2min, x2max): #Функция для построения трехмерного графика
+    fig = plt.figure(figsize=[16, 9])
+
+    yn = function([x['10'], x['20']])
+
+    x1, x2, y = graph_3d(x1min, x1max, x2min, x2max)
     
+    axes_1 = fig.add_subplot(2, 2, 1, projection='3d') #Задаю позицию графика в едином окне и его размерность
+    axes_1.set(xlabel="x\u2081", ylabel="x\u2082", zlabel="y = f(x\u2081, x\u2082)") #Задаю названия осей
+    axes_1.plot_surface(x1, x2, y, cmap="hot")
+    axes_1.scatter(x['10'], x['20'], yn, color='black', marker='o') #Отмечаю точку с заданными координатами
+    axes_1.text(x['10'], x['20'], yn, "y = f(x\u2081\u2080, x\u2082\u2080)") #Подписываю точку с заданными координатами
 
-def draw_2d(xn, y, n = None): #Функция для построения двухмерного графика
-    plt.plot(xn, y) #Вывожу точки с координатами x и y
+    axes_2 = fig.add_subplot(2, 2, 2, projection='3d') #Задаю позицию графика в едином окне и его размерность
+    axes_2.set(xlabel="x\u2081", ylabel="x\u2082", zlabel="y = f(x\u2081, x\u2082)") #Задаю названия осей
+    axes_2.view_init(elev=90, azim=90) #Задаю точку наблюдения
+    axes_2.plot_surface(x1, x2, y, cmap="hot")
+    axes_2.scatter(x['10'], x['20'], yn, color='black', marker='o') #Отмечаю точку с заданными координатами
+    axes_2.text(x['10'], x['20'], yn, "y = f(x\u2081\u2080, x\u2082\u2080)") #Подписываю точку с заданными координатами
 
-    match n: 
-        case 1:
-            plt.ylabel("y = f(x\u2081)")
-            plt.xlabel("x\u2081")
-        
-        case 2:
-            plt.ylabel("y = f(x\u2082)")
-            plt.xlabel("x\u2082")
+    x1, y = graph_2d(x1min, x1max, x20 = x['20'])
 
-        case _:
-            plt.ylabel("y = f(x)")
-            plt.xlabel("x")
+    axes_3 = fig.add_subplot(2, 2, 3) #Задаю позицию графика в едином окне
+    axes_3.set(xlabel = ("x\u2081"), ylabel = ("y = f(x\u2081)")) #Задаю названия осей
+    axes_3.plot(x1, y, color = "#735184")
+    axes_3.scatter(x['10'], yn, color='black', marker='o') #Отмечаю точку с заданными координатами
+    axes_3.text(x['10'], yn, "y = f(x\u2081\u2080)") #Подписываю точку с заданными координатами
 
-    plt.title(f"f(x\u2081\u2080, x\u2082\u2080) = {function([x['10'], x['20']])}") #Как заглавие вывожу значение выражения в x10 и x20
-    plt.grid(True) #Включаю показ сетки на графике
-    plt.show()
+    x2, y = graph_2d(x2min, x2max, x10 = x['10'])
 
-def draw_3d(x1, x2, z, elevation = 30, azimuth = -60): #Функция для построения трехмерного графика
-    fig = plt.figure()
-    axes = fig.add_subplot(projection='3d')
-    axes.set(xlabel="x\u2081", ylabel="x\u2082", zlabel="z = f(x\u2081, x\u2082)") #Задаю названия осей
-    axes.view_init(elev=elevation, azim=azimuth) #Задаю точку наблюдения
-    axes.plot_surface(x1, x2, z, cmap="hot")
+    axes_4 = fig.add_subplot(2, 2, 4) #Задаю позицию графика в едином окне
+    axes_4.set(xlabel = ("x\u2082"), ylabel = ("y = f(x\u2082)")) #Задаю названия осей
+    axes_4.plot(x2, y, color = "#735184")
+    axes_4.scatter(x['20'], yn, color='black', marker='o') #Отмечаю точку с заданными координатами
+    axes_4.text(x['20'], yn, "y = f(x\u2082\u2080)") #Подписываю точку с заданными координатами
 
-    plt.title(f"f(x\u2081\u2080, x\u2082\u2080) = {function([x['10'], x['20']])}") #Как заглавие вывожу значение выражения в x10 и x20
     plt.show()
 
 if __name__ == "__main__":
@@ -81,13 +88,5 @@ if __name__ == "__main__":
     x2min = -500.
     x2max = 500.
     x = {'10': 420.9687, '20': 420.9687}
-    
-    x1, x2, y = graph_3d(x1min, x1max, x2min, x2max)
-    draw_3d(x1, x2, y)
-    draw_3d(x1, x2, y, 90, 90)
 
-    x1, y = graph_2d(x1min, x1max, None, x['20'])
-    draw_2d(x1, y, 1)
-
-    x2, y = graph_2d(x2min, x2max, x['10'], None)
-    draw_2d(x2, y, 2)
+    draw(x1min, x1max, x2min, x2max)

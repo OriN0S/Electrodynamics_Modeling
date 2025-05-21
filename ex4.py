@@ -64,8 +64,8 @@ def make_path(path): #Функция для проверки существов�
         Path.mkdir("results") #Создаю заданную папку
     
 def load_file(url): #Функция для скачивания файла с сайта и его прочтения
-        file_path = Path("results", "task_rcs_01.csv")
         make_path(Path("results"))
+        file_path = Path("results", "task_rcs_01.csv")
         request.urlretrieve(url, file_path)
 
         with open (file_path, mode='r', newline='') as file:

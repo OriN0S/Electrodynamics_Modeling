@@ -48,8 +48,6 @@ class Output:
 
         result = {"data": data}
 
-        self.make_path(Path("results"))
-
         with open(Path("results", "output_ex4.json"), mode='w') as file:
             file.write(json.dumps(result, indent = 4, separators = (", ", ": ")))
 
@@ -61,12 +59,13 @@ class Output:
         plt.grid(True) #Включаю показ сетки на графике
         plt.show()
 
-    def make_path(self, path): #Функция для проверки существования и создания папки
-        if path.is_dir() == False: #Проверяю является ли указанный элемент папкой (если папки нет возвращает False)
-            Path.mkdir("results") #Создаю заданную папку
+def make_path(path): #Функция для проверки существования и создания папки
+    if path.is_dir() == False: #Проверяю является ли указанный элемент папкой (если папки нет возвращает False)
+        Path.mkdir("results") #Создаю заданную папку
     
 def load_file(url): #Функция для скачивания файла с сайта и его прочтения
         file_path = Path("results", "task_rcs_01.csv")
+        make_path(Path("results"))
         request.urlretrieve(url, file_path)
 
         with open (file_path, mode='r', newline='') as file:

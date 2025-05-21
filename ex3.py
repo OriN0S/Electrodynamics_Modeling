@@ -31,7 +31,7 @@ def graph_2d(xmin, xmax, x10 = None, x20 = None, count = 200): #Функция �
         return xgrid[1], y
     
     else:
-        return None
+        return None, None
 
 def graph_3d(x1min, x1max, x2min, x2max, count = 200): #Функция для рассчёта выражения от двух переменных
     xgrid = [0, 0]
@@ -44,7 +44,7 @@ def graph_3d(x1min, x1max, x2min, x2max, count = 200): #Функция для р
     y = function(xgrid)
     return xgrid[0], xgrid[1], y
 
-def draw(x1min, x1max, x2min, x2max): #Функция для построения трехмерного графика
+def draw(x1min, x1max, x2min, x2max): #Функция для графиков
     fig = plt.figure(figsize=[16, 9])
 
     yn = function([x['10'], x['20']])

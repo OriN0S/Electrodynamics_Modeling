@@ -13,21 +13,21 @@ class RCS:
         self.fmin = fmin 
         self.fmax = fmax 
         self.radius = diameter / 2 
- 
+
     def hn_function(self, n, x): 
         #Возвращаю комплексное число 
         return sp.spherical_jn(n, x) + (sp.spherical_yn(n, x) * 1j) 
-    
+
     def an_function(self, n, k): 
         return (sp.spherical_jn(n, k * self.radius)) / (self.hn_function(n, k * self.radius)) 
-        
+
     def bn_function(self, n, k): 
         numerator = (k * self.radius * sp.spherical_jn(n - 1, k * self.radius)) - \
                     (n * sp.spherical_jn(n, k * self.radius)) 
         denominator = (k * self.radius * self.hn_function(n - 1, k * self.radius)) - \
-                      (n * self.hn_function(n, k * self.radius)) 
+                    (n * self.hn_function(n, k * self.radius)) 
         return (numerator / denominator) 
- 
+
     def calculate(self, count_p, count_n = 50): 
         sum = 0 
         frequencies = np.linspace(fmin, fmax, count_p) 
@@ -44,7 +44,7 @@ class Output:
         self.freq = frequencies 
         self.wave = wavelengths 
         self.rcs = rcs 
- 
+
     def write_file(self, count): 
         data = [] 
         for n in range(count): 
@@ -54,11 +54,11 @@ class Output:
  
         with open(Path("results", "output_ex4.json"), mode='w') as file: 
             file.write(json.dumps(result, indent = 4, separators = (", ", ": "))) 
- 
+
     def draw(self): 
         plt.plot(self.freq, self.rcs) 
         plt.title("Зависимость ЭПР идеально проводящей сферы \u03c3 " 
-                  "от частоты F") 
+                "от частоты F") 
         plt.ylabel("\u03c3 = f(F)") 
         plt.xlabel("F") 
         plt.grid(True) 

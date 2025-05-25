@@ -15,7 +15,7 @@ def graph_2d(xmin, xmax, x10 = None, x20 = None, count = 200):
     xgrid = [0, 0]
 
     #Проверка на функцию от x1 при x2 = x20
-    if x10 == None:
+    if (x10 == None) & (x20 != None):
         x = np.linspace(xmin, xmax, count)
 
         xgrid[0] = x
@@ -25,7 +25,7 @@ def graph_2d(xmin, xmax, x10 = None, x20 = None, count = 200):
         return xgrid[0], y
     
     #Проверка на функцию от x2 при x1 = x10
-    elif x20 == None:
+    elif (x20 == None) & (x10 != None):
         x = np.linspace(xmin, xmax, count)
 
         xgrid[0] = x10

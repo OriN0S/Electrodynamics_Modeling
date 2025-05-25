@@ -15,8 +15,9 @@ class RCS:
         self.radius = diameter / 2
 
     def hn_function(self, n, x):
-        return sp.spherical_jn(n, x) + (sp.spherical_yn(n, x) * 1j) #Возвращаю комплексное число (действительная часть слева, комплексная - справа)
- 
+        #Возвращаю комплексное число (действительная часть слева, комплексная - справа)
+        return sp.spherical_jn(n, x) + (sp.spherical_yn(n, x) * 1j)
+    
     def an_function(self, n, k):
         return (sp.spherical_jn(n, k * self.radius)) / (self.hn_function(n, k * self.radius))
         
@@ -52,18 +53,22 @@ class Output:
             file.write(json.dumps(result, indent = 4, separators = (", ", ": ")))
 
     def draw(self):
-        plt.plot(self.freq, self.rcs) #Вывожу точки с координатами x и y
+        plt.plot(self.freq, self.rcs)
         plt.title("Зависимость ЭПР идеально проводящей сферы \u03c3 от частоты F")
         plt.ylabel("\u03c3 = f(F)")
         plt.xlabel("F")
-        plt.grid(True) #Включаю показ сетки на графике
+        plt.grid(True)
         plt.show()
 
-def make_path(path): #Функция для проверки существования и создания папки
-    if path.is_dir() == False: #Проверяю является ли указанный элемент папкой (если папки нет возвращает False)
-        Path.mkdir("results") #Создаю заданную папку
-    
-def load_file(url): #Функция для скачивания файла с сайта и его прочтения
+#Функция для проверки существования и создания папки
+def make_path(path):
+    #Проверяю является ли указанный элемент папкой (если папки нет возвращает False)
+    if path.is_dir() == False:
+        #Создаю заданную папку
+        Path.mkdir("results")
+
+#Функция для скачивания файла с сайта и его прочтения   
+def load_file(url):
         make_path(Path("results"))
         file_path = Path("results", "task_rcs_01.csv")
         request.urlretrieve(url, file_path)

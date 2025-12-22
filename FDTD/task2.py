@@ -74,12 +74,12 @@ class GaussianDiff():
         self.dt = dt
         self.Sc = Sc
         self.eps = eps
-        self.mu = mu    
+        self.mu = mu
+        self.wg = np.sqrt(np.log(5.5 * self.a_max)) / (np.pi * self.f_max)
+        self.dg = self.wg * np.sqrt(np.log(2.5 * self.a_max * np.sqrt(np.log(2.5 * self.a_max))))    
 
     def getE(self, pos, time):
-        wg = np.sqrt(np.log(5.5 * self.a_max)) / (np.pi * self.f_max)
-        dg = wg * np.sqrt(np.log(2.5 * self.a_max * np.sqrt(np.log(2.5 * self.a_max))))
-        e = ((time - pos * np.sqrt(self.eps * self.mu) / self.Sc) - dg/self.dt) / (wg/self.dt)
+        e = ((time - pos * np.sqrt(self.eps * self.mu) / self.Sc) - self.dg/self.dt) / (self.wg/self.dt)
         return (-2 * self.magnitude * e * np.exp(-(e ** 2)))
     
 class Probe:
@@ -102,18 +102,8 @@ class Probe:
         self._time += 1
     
 if __name__ == '__main__':
-    # Используемые константы
-    # Характеристическое сопротивление свободного пространства
-    Z0 = 120.0 * np.pi
 
-    # Электрическая постоянная
-    eps0 = 8.854187817e-12
-
-    # Магнитная постоянная
-    mu0 = np.pi * 4e-7
-
-    # Скорость света в вакууме
-    c = 1.0 / np.sqrt(mu0 * eps0)
+    d = 6e-4
 
     # Минимальная заданная частота в Гц
     f_min = 0
@@ -121,76 +111,71 @@ if __name__ == '__main__':
     # Максимальная заданная частота в Гц
     f_max = 1.5e9
 
+    # Характеристическое сопротивление свободного пространства
+    Z0 = 120.0 * np.pi
+
     # Число Куранта
     Sc = 1.0
-    
-    # Дискрет по пространству в м
-    dx = 6e-4
 
-    # Дискрет по времени в с
-    dt = dx * Sc / c   
+    # Магнитная постоянная
+    mu0 = np.pi * 4e-7
 
-    # Время расчета в секундах
+    # Электрическая постоянная
+    eps0 = 8.854187817e-12
+
+    # Скорость света в вакууме
+    c = 1.0 / np.sqrt(mu0 * eps0)
+
+    # Расчет "дискретных" параметров моделирования
+    dt = d / c * Sc
+
+    # Время расчета в отсчетах
     maxTime_s = 6e-8
-
-    # Размер области моделирования в м
-    maxSize_m = 6.0
-    layer4_m = maxSize_m - 1
-    layer3_m = layer4_m - 0.15
-    layer2_m = layer3_m - 0.09
-    layer1_m = layer2_m - 0.13
-
-    # Положение источника в м
-    sourcePos_m = 1.0
-
-    # Время расчета в секундах
-    maxTime = int((maxTime_s/dt))
-
+    maxTime = int(np.ceil(maxTime_s / dt))
+    
     # Размер области моделирования в отсчетах
-    maxSize = int(maxSize_m/dx)
-    layers = [int(layer4_m/dx), int(layer3_m/dx), int(layer2_m/dx), int(layer1_m/dx)]
+    sizeX_m = 6
+    maxSize = int(np.ceil(sizeX_m / d))
+    layer_x_4 = sizeX_m - 1
+    layer_x_4_DX=int(np.ceil(layer_x_4 / d))
+    layer_x_3 = layer_x_4 - 0.15
+    layer_x_3_DX=int(np.ceil(layer_x_3 / d))
+    layer_x_2 = layer_x_3 - 0.09
+    layer_x_2_DX=int(np.ceil(layer_x_2 / d))
+    layer_x = layer_x_2 - - 0.13                
+    layer_x_DX=int(np.ceil(layer_x / d))
 
     # Положение источника в отсчетах
-    sourcePos = int(sourcePos_m/dx)
+    sourcePos_m = 1.0
+    sourcePos = int(np.ceil(sourcePos_m / d))
 
-    # Координаты датчика в отсчетах
-    probesPos = [int((sourcePos_m - 0.5)/dx), int((sourcePos_m + 0.5)/dx)]
+    # Датчики для регистрации поля
+    probesPos = [int(np.ceil(1.5 / d)), int(np.ceil(0.5 / d))]
     probes = [Probe(pos, maxTime) for pos in probesPos]
-    
-    # Где начинается поглощающий диэлектрик
-    # layer_loss_x = maxSize - 25
 
-    # Моделирование
-    # Диэлектрическая проницаемость
+    # Параметры среды
     eps = np.ones(maxSize)
-    eps[:] = 1
-    eps[layers[0]:] = 7.2
-    eps[layers[1]:] = 8.5
-    eps[layers[2]:] = 12.3
-    eps[layers[3]:] = 6.3
-
-    # Магнитная проницаемость
-    mu = np.ones(maxSize - 1)
-
+    eps[layer_x_DX:] = 7.2
+    eps[layer_x_2_DX:] = 8.5
+    eps[layer_x_3_DX:] = 12.3
+    eps[layer_x_4_DX:] = 6.3
+    mu = np.ones(maxSize-1)
+    
     Ez = np.zeros(maxSize)
+    Ezspectrumpad = np.zeros(maxTime)
+    Ezspectrumotr = np.zeros(maxTime)
     Hy = np.zeros(maxSize - 1)
 
-    # Коэффициенты для расчета ABC второй степени
-    # Sc для правой границы
+    source = GaussianDiff(magnitude=1, a_max=100, f_max=f_max, dt=dt, eps=eps[sourcePos], mu=mu[sourcePos])
+
+    #Коэффициенты для расчета ABC второй степени
+    # Sc' для правой границы
     Sc1Right = Sc / np.sqrt(mu[-1] * eps[-1])
 
     k1Right = -1 / (1 / Sc1Right + 2 + Sc1Right)
     k2Right = 1 / Sc1Right - 2 + Sc1Right
     k3Right = 2 * (Sc1Right - 1 / Sc1Right)
     k4Right = 4 * (1 / Sc1Right + Sc1Right)
-
-    # Sc для левой границы
-    Sc1Left = Sc / np.sqrt(mu[0] * eps[0])
-
-    k1Left = -1 / (1 / Sc1Left + 2 + Sc1Left)
-    k2Left = 1 / Sc1Left - 2 + Sc1Left
-    k3Left = 2 * (Sc1Left - 1 / Sc1Left)
-    k4Left = 4 * (1 / Sc1Left + Sc1Left)
 
     # Ez[0: 2] в предыдущий момент времени (q)
     oldEzLeft1 = np.zeros(3)
@@ -204,30 +189,40 @@ if __name__ == '__main__':
     # Ez[-3: -1] в пред-предыдущий момент времени (q - 1)
     oldEzRight2 = np.zeros(3)
 
-    source = GaussianDiff(magnitude=1, a_max=100, f_max=f_max, dt=dt, eps=eps[sourcePos], mu=mu[sourcePos])
+    # Создание экземпляра класса для отображения
+    # распределения поля в пространстве
+    display = AnimateFieldDisplay(maxSize, -1.1, 1.1, 'Ez, В/м', d)
 
-    # Создание экземпляра класса для отображения распределения поля в пространстве
-    display = AnimateFieldDisplay(maxSize, -1.1, 1.1, 'Ez, В/м', dx)
     display.activate()
+    display.drawProbes([probesPos[0] * d])
+    display.drawProbes([probesPos[1] * d])
     display.drawSources([sourcePos_m])
-    for pos in probesPos:
-        display.drawProbes([pos * dx])
-    for layer in layers:
-        display.drawBoundary([layer * dx])
+    display.drawBoundary(layer_x)
+    display.drawBoundary(layer_x_2)
+    display.drawBoundary(layer_x_3)
+    display.drawBoundary(layer_x_4)
 
     for q in range(1, maxTime):
-        # Расчет компоненты поля H        
+        # Расчет компоненты поля H
         Hy[:] = Hy + (Ez[1:] - Ez[:-1]) * Sc / (Z0 * mu)
 
-        # Источник возбуждения с использованием метода TFSF
-        Hy[sourcePos - 1] -= (Sc / (Z0 * mu[sourcePos - 1])) * source.getE(0, q)
+        # Источник возбуждения с использованием метода
+        # Total Field / Scattered Field
+        Hy[sourcePos - 1] -= Sc / (Z0 * mu[sourcePos - 1]) * source.getE(0, q)
 
         # Расчет компоненты поля E
         Ez[1:-1] = Ez[1:-1] + (Hy[1:] - Hy[:-1]) * Sc * Z0 / eps[1:-1]
 
-        # Источник возбуждения с использованием метода TFSF
-        Ez[sourcePos] += (Sc / np.sqrt(eps[sourcePos] * mu[sourcePos])) *  source.getE(-0.5, q + 0.5)
+        # Источник возбуждения с использованием метода
+        # Total Field / Scattered Field
+        Ez[sourcePos] += (Sc / (np.sqrt(eps[sourcePos] * mu[sourcePos])) *
+                          source.getE(-0.5, q + 0.5))
 
+        Sc1Left = Sc / np.sqrt(mu[0] * eps[0])
+        k1Left = -1 / (1 / Sc1Left + 2 + Sc1Left)
+        k2Left = 1 / Sc1Left - 2 + Sc1Left
+        k3Left = 2 * (Sc1Left - 1 / Sc1Left)
+        k4Left = 4 * (1 / Sc1Left + Sc1Left)
         # Граничные условия ABC второй степени (слева)
         Ez[0] = (k1Left * (k2Left * (Ez[2] + oldEzLeft2[0]) +
                            k3Left * (oldEzLeft1[0] + oldEzLeft1[2] - Ez[1] - oldEzLeft2[1]) -
@@ -235,7 +230,6 @@ if __name__ == '__main__':
 
         oldEzLeft2[:] = oldEzLeft1[:]
         oldEzLeft1[:] = Ez[0: 3]
-
         # Граничные условия ABC второй степени (справа)
         Ez[-1] = (k1Right * (k2Right * (Ez[-3] + oldEzRight2[-1]) +
                              k3Right * (oldEzRight1[-1] + oldEzRight1[-3] - Ez[-2] - oldEzRight2[-2]) -
@@ -248,53 +242,64 @@ if __name__ == '__main__':
         for probe in probes:
             probe.addData(Ez, Hy)
 
-        # Модификатор точности анимации распространения волны
-        if q % 300 == 0:
+        if q % 300 == 0:            
             display.updateData(Ez, q * dt)
 
     display.stop()
 
-    # Построение графика распространения волны
+    # Отображение сигналов, сохраненных в датчиках
     time = np.arange(maxTime)
     fig = plt.figure(figsize = [16, 9])
     ax1 = fig.add_subplot(2, 2, 1)
     ax1.set(xlabel = 'Время t, с', ylabel = 'Ez, В/м')
     ax1.set_xlim(0, maxTime_s)
     ax1.set_ylim(-1.1, 1.1)
-    ax1.plot(time * dt, probes[0].E)
     ax1.plot(time * dt, probes[1].E)
+    ax1.plot(time * dt, probes[0].E)
     ax1.grid()
-
-    # Расчёт дискрета по частоте
-    df = 1 / maxTime_s
     
-    # Расчёт спектра падающей волны
-    spectrum = np.abs(np.fft.fft(probes[0].E))
-    spectrum = np.fft.fftshift(spectrum)
+    # Расчет спектра
 
-    # Построение графика амплитудного спектра падающей волны
-    freq = np.arange(-(maxTime / 2) * df, (maxTime / 2) * df, df)
+    size = maxTime
+
+    df = 1/ (maxTime * dt)
+    
+    start_index_pad = 10000
+        
+    for q in range(1, maxTime):
+        Ezspectrumpad[q]=probes[0].E[q]
+        
+        Ezspectrumotr[q]=probes[1].E[q]
+    
+    Ezspectrumpad[start_index_pad:] = [1e-28]  
+
+    spectrumpad = np.fft.fft(Ezspectrumpad)
+    spectrumotr = np.fft.fft(Ezspectrumotr)
+    koefotr=spectrumotr/(spectrumpad)
+    koefotr=abs(koefotr)
+    koefotr=np.fft.fftshift(koefotr)
+    
+    spectrumpad = np.abs(np.fft.fft(Ezspectrumpad))
+    spectrumotr = np.abs(np.fft.fft(Ezspectrumotr)) 
+
+    spectrumotr = np.fft.fftshift(spectrumotr)
+    spectrumpad = np.fft.fftshift(spectrumpad)
+
+    # Расчет частоты
+    freq = np.arange(-size / 2 * df, size / 2 * df, df)
+    # Отображение спектров
     ax2 = fig.add_subplot(2, 2, 2)   
     ax2.set(xlabel = 'Частота f, Гц', ylabel = '|S| / |Smax|')
     ax2.set_xlim(0, f_max)
-    ax2.plot(freq, spectrum / np.max(spectrum))
+    ax2.plot(freq, spectrumpad / np.max(spectrumpad))
+    ax2.plot(freq, spectrumotr / np.max(spectrumotr))
     ax2.grid()
-
-    # Расчёт спектра отраженной волны
-    spectrum = np.abs(np.fft.fft(probes[1].E))
-    spectrum = np.fft.fftshift(spectrum)
-
-    # Построение графика амплитудного спектра отраженной волны
-    ax2.plot(freq, spectrum / np.max(spectrum))
-
-    koef_otr = np.abs(np.fft.fft(probes[0].E)/np.fft.fft(probes[1].E))
-    koef_otr = np.fft.fftshift(koef_otr)
 
     ax3 = fig.add_subplot(2, 2, 3)   
     ax3.set(xlabel = 'Частота f, Гц', ylabel = 'Коэффициент отражения Г')
     ax3.set_xlim(f_min, f_max)
     ax3.set_ylim(0, 1)
-    ax3.plot(freq, koef_otr)
+    ax3.plot(freq, koefotr)
     ax3.grid()
 
     plt.show()
